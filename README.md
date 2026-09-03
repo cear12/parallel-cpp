@@ -41,6 +41,19 @@ CMake options (all default `ON`):
 - `PARALLELCPP_BUILD_TESTS` — build the Catch2 unit test suite
 - `PARALLELCPP_BUILD_EXAMPLES` — build `examples/`
 
+## Building in Visual Studio
+
+With three executable targets (`thread_pool_demo`, `thread_sync_demo`,
+`parallelcpp_tests`) and no CMakePresets.json, Visual Studio's Open
+Folder / CMake integration has no default startup item configured.
+Pressing **Debug/Run** (not Build) then pops a blocking "Select Startup
+Item" dialog -- easy to mistake for the project failing to build, even
+though **Build > Build All** (Ctrl+Shift+B) succeeds regardless of
+what's selected there. `CMakePresets.json` sets
+`CMAKE_VS_STARTUP_PROJECT` to `thread_pool_demo` so Debug/Run works
+immediately too; pick a different target from the dropdown next to the
+Run button to debug either of the other two.
+
 ## Examples
 
 - `examples/thread_pool_demo` — basic task submission, a mixed CPU/IO
