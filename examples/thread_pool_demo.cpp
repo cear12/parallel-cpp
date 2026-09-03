@@ -13,57 +13,57 @@ using parallelcpp::ThreadPool;
 
 namespace {
 
-void printStats(const ThreadPool& pool) {
-    std::cout << "  workers=" << pool.workerCount() << " active=" << pool.activeTaskCount()
-              << " queued=" << pool.queueSize() << " completed=" << pool.totalCompletedCount() << "\n";
+void PrintStats(const ThreadPool& pool) {
+    std::cout << "  workers=" << pool.WorkerCount() << " active=" << pool.ActiveTaskCount()
+              << " queued=" << pool.QueueSize() << " completed=" << pool.TotalCompletedCount() << "\n";
 }
 
-int cpuIntensiveTask(int n) {
+int CpuIntensiveTask(int n) {
     double result = 0;
     for (int i = 0; i < n * 10000; ++i) result += std::sin(i) * std::cos(i);
     return static_cast<int>(result);
 }
 
-std::string ioSimulationTask(const std::string& filename, int delayMs) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+std::string IoSimulationTask(const std::string& filename, int delay_ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     return "processed " + filename;
 }
 
-void basicUsage() {
+void BasicUsage() {
     std::cout << "\n=== Basic usage ===\n";
     ThreadPool pool(4);
     std::vector<std::future<int>> results;
-    for (int i = 1; i <= 6; ++i) results.push_back(pool.enqueue(cpuIntensiveTask, i * 100));
+    for (int i = 1; i <= 6; ++i) results.push_back(pool.Enqueue(CpuIntensiveTask, i * 100));
 
     std::cout << "Submitted 6 CPU-bound tasks\n";
     for (auto& r : results) std::cout << "  result=" << r.get() << "\n";
-    pool.waitForAll();
-    printStats(pool);
+    pool.WaitForAll();
+    PrintStats(pool);
 }
 
-void mixedWorkload() {
+void MixedWorkload() {
     std::cout << "\n=== Mixed CPU + I/O workload ===\n";
     ThreadPool pool(6);
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> delayDist(5, 20);
+    std::uniform_int_distribution<> delay_dist(5, 20);
 
-    std::vector<std::future<std::string>> ioResults;
+    std::vector<std::future<std::string>> io_results;
     for (int i = 0; i < 8; ++i) {
-        ioResults.push_back(pool.enqueue(ioSimulationTask, "file_" + std::to_string(i) + ".txt", delayDist(gen)));
+        io_results.push_back(pool.Enqueue(IoSimulationTask, "file_" + std::to_string(i) + ".txt", delay_dist(gen)));
     }
-    for (int i = 0; i < 5; ++i) pool.enqueue(cpuIntensiveTask, 50 + i * 10);
+    for (int i = 0; i < 5; ++i) pool.Enqueue(CpuIntensiveTask, 50 + i * 10);
 
-    for (auto& r : ioResults) std::cout << "  " << r.get() << "\n";
-    pool.waitForAll();
-    printStats(pool);
+    for (auto& r : io_results) std::cout << "  " << r.get() << "\n";
+    pool.WaitForAll();
+    PrintStats(pool);
 }
 
-void batchProcessing() {
+void BatchProcessing() {
     std::cout << "\n=== Batch processing ===\n";
     ThreadPool pool(std::thread::hardware_concurrency());
 
-    auto batchTask = [](const std::vector<int>& data) {
+    auto batch_task = [](const std::vector<int>& data) {
         long long sum = 0;
         for (int v : data) sum += static_cast<long long>(v) * v;
         return sum;
@@ -75,7 +75,7 @@ void batchProcessing() {
     for (int batch = 0; batch < kNumBatches; ++batch) {
         std::vector<int> data(kBatchSize);
         std::iota(data.begin(), data.end(), batch * kBatchSize);
-        results.push_back(pool.enqueue(batchTask, data));
+        results.push_back(pool.Enqueue(batch_task, data));
     }
 
     long long total = 0;
@@ -83,17 +83,17 @@ void batchProcessing() {
     std::cout << "Sum of squares across " << kNumBatches << " batches: " << total << "\n";
 }
 
-void exceptionHandling() {
+void ExceptionHandling() {
     std::cout << "\n=== Exception propagation through std::future ===\n";
     ThreadPool pool(3);
 
-    auto riskyTask = [](int id, bool shouldThrow) -> int {
-        if (shouldThrow) throw std::runtime_error("task " + std::to_string(id) + " failed");
+    auto risky_task = [](int id, bool should_throw) -> int {
+        if (should_throw) throw std::runtime_error("task " + std::to_string(id) + " failed");
         return id * 10;
     };
 
     std::vector<std::future<int>> futures;
-    for (int i = 0; i < 6; ++i) futures.push_back(pool.enqueue(riskyTask, i, i % 3 == 0));
+    for (int i = 0; i < 6; ++i) futures.push_back(pool.Enqueue(risky_task, i, i % 3 == 0));
 
     for (std::size_t i = 0; i < futures.size(); ++i) {
         try {
@@ -109,9 +109,9 @@ void exceptionHandling() {
 
 int main() {
     std::cout << "hardware_concurrency = " << std::thread::hardware_concurrency() << "\n";
-    basicUsage();
-    mixedWorkload();
-    batchProcessing();
-    exceptionHandling();
+    BasicUsage();
+    MixedWorkload();
+    BatchProcessing();
+    ExceptionHandling();
     std::cout << "\nAll thread pool demos completed.\n";
 }

@@ -2,24 +2,24 @@
 
 namespace parallelcpp {
 
-ThreadPool::ThreadPool(std::size_t threadCount) {
-    if (threadCount == 0) threadCount = 1;
-    workers_.reserve(threadCount);
-    for (std::size_t i = 0; i < threadCount; ++i) {
-        workers_.emplace_back([this] { workerLoop(); });
+ThreadPool::ThreadPool(std::size_t thread_count) {
+    if (thread_count == 0) thread_count = 1;
+    workers_.reserve(thread_count);
+    for (std::size_t i = 0; i < thread_count; ++i) {
+        workers_.emplace_back([this] { WorkerLoop(); });
     }
 }
 
-ThreadPool::~ThreadPool() { shutdown(); }
+ThreadPool::~ThreadPool() { Shutdown(); }
 
-void ThreadPool::waitForAll() {
-    std::unique_lock<std::mutex> lock(queueMutex_);
-    condition_.wait(lock, [this] { return tasks_.empty() && activeTasks_.load() == 0; });
+void ThreadPool::WaitForAll() {
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    condition_.wait(lock, [this] { return tasks_.empty() && active_tasks_.load() == 0; });
 }
 
-void ThreadPool::shutdown() {
+void ThreadPool::Shutdown() {
     {
-        std::unique_lock<std::mutex> lock(queueMutex_);
+        std::unique_lock<std::mutex> lock(queue_mutex_);
         if (stopping_.exchange(true)) return;  // already shut down
     }
     condition_.notify_all();
@@ -29,16 +29,16 @@ void ThreadPool::shutdown() {
     workers_.clear();
 }
 
-std::size_t ThreadPool::queueSize() const {
-    std::lock_guard<std::mutex> lock(queueMutex_);
+std::size_t ThreadPool::QueueSize() const {
+    std::lock_guard<std::mutex> lock(queue_mutex_);
     return tasks_.size();
 }
 
-void ThreadPool::workerLoop() {
+void ThreadPool::WorkerLoop() {
     while (true) {
         std::function<void()> task;
         {
-            std::unique_lock<std::mutex> lock(queueMutex_);
+            std::unique_lock<std::mutex> lock(queue_mutex_);
             condition_.wait(lock, [this] { return stopping_.load() || !tasks_.empty(); });
 
             if (stopping_.load() && tasks_.empty()) return;
@@ -51,9 +51,9 @@ void ThreadPool::workerLoop() {
 
         if (task) {
             task();
-            activeTasks_--;
-            totalCompleted_++;
-            condition_.notify_all();  // wake any waitForAll() waiters
+            active_tasks_--;
+            total_completed_++;
+            condition_.notify_all();  // wake any WaitForAll() waiters
         }
     }
 }

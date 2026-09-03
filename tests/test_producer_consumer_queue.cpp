@@ -5,59 +5,59 @@
 
 using parallelcpp::ProducerConsumerQueue;
 
-TEST_CASE("tryPop returns false on an empty queue and true once something is pushed", "[producer_consumer_queue]") {
+TEST_CASE("TryPop returns false on an empty queue and true once something is pushed", "[producer_consumer_queue]") {
     ProducerConsumerQueue<int> queue;
     int value = 0;
-    REQUIRE_FALSE(queue.tryPop(value));
+    REQUIRE_FALSE(queue.TryPop(value));
 
-    queue.push(42);
-    REQUIRE(queue.tryPop(value));
+    queue.Push(42);
+    REQUIRE(queue.TryPop(value));
     REQUIRE(value == 42);
-    REQUIRE(queue.empty());
+    REQUIRE(queue.Empty());
 }
 
-TEST_CASE("waitAndPop returns items in FIFO order", "[producer_consumer_queue]") {
+TEST_CASE("WaitAndPop returns items in FIFO order", "[producer_consumer_queue]") {
     ProducerConsumerQueue<int> queue;
-    queue.push(1);
-    queue.push(2);
-    queue.push(3);
+    queue.Push(1);
+    queue.Push(2);
+    queue.Push(3);
 
-    REQUIRE(queue.waitAndPop() == 1);
-    REQUIRE(queue.waitAndPop() == 2);
-    REQUIRE(queue.waitAndPop() == 3);
+    REQUIRE(queue.WaitAndPop() == 1);
+    REQUIRE(queue.WaitAndPop() == 2);
+    REQUIRE(queue.WaitAndPop() == 3);
 }
 
-TEST_CASE("waitAndPop unblocks with nullopt once setFinished is called on an empty queue",
+TEST_CASE("WaitAndPop unblocks with nullopt once SetFinished is called on an empty queue",
           "[producer_consumer_queue]") {
     ProducerConsumerQueue<int> queue;
     std::thread consumer([&] {
-        auto result = queue.waitAndPop();
+        auto result = queue.WaitAndPop();
         REQUIRE_FALSE(result.has_value());
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    queue.setFinished();
+    queue.SetFinished();
     consumer.join();
 }
 
-TEST_CASE("waitAndPop delivers an already-queued item even after setFinished", "[producer_consumer_queue]") {
+TEST_CASE("WaitAndPop delivers an already-queued item even after SetFinished", "[producer_consumer_queue]") {
     ProducerConsumerQueue<int> queue;
-    queue.push(99);
-    queue.setFinished();
+    queue.Push(99);
+    queue.SetFinished();
 
     // Draining what's already there takes priority over "finished".
-    REQUIRE(queue.waitAndPop() == 99);
-    REQUIRE_FALSE(queue.waitAndPop().has_value());
+    REQUIRE(queue.WaitAndPop() == 99);
+    REQUIRE_FALSE(queue.WaitAndPop().has_value());
 }
 
-TEST_CASE("size() tracks pushes and pops accurately", "[producer_consumer_queue]") {
+TEST_CASE("Size() tracks pushes and pops accurately", "[producer_consumer_queue]") {
     ProducerConsumerQueue<int> queue;
-    REQUIRE(queue.size() == 0);
-    queue.push(1);
-    queue.push(2);
-    REQUIRE(queue.size() == 2);
+    REQUIRE(queue.Size() == 0);
+    queue.Push(1);
+    queue.Push(2);
+    REQUIRE(queue.Size() == 2);
 
     int out;
-    queue.tryPop(out);
-    REQUIRE(queue.size() == 1);
+    queue.TryPop(out);
+    REQUIRE(queue.Size() == 1);
 }

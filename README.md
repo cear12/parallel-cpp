@@ -11,22 +11,22 @@ are required to build the library or the examples.
 
 | Header | Description |
 |---|---|
-| `parallelcpp/thread_pool.h` | `ThreadPool` — fixed-size worker pool; `enqueue()` returns a `std::future` for the task's result (or exception). Supports `waitForAll()` and graceful `shutdown()`. |
-| `parallelcpp/producer_consumer_queue.h` | `ProducerConsumerQueue<T>` — header-only thread-safe queue. `waitAndPop()` returns `std::optional<T>`, so a shutdown drain (queue empty, `setFinished()` called) is expressed as `std::nullopt` instead of an uninitialized read. |
-| `parallelcpp/bank_account.h` | `BankAccount` — minimal mutex-protected account (`deposit`/`withdraw`/`balance`) used as a concurrency stress-test subject. |
+| `parallelcpp/thread_pool.h` | `ThreadPool` — fixed-size worker pool; `Enqueue()` returns a `std::future` for the task's result (or exception). Supports `WaitForAll()` and graceful `Shutdown()`. |
+| `parallelcpp/producer_consumer_queue.h` | `ProducerConsumerQueue<T>` — header-only thread-safe queue. `WaitAndPop()` returns `std::optional<T>`, so a shutdown drain (queue empty, `SetFinished()` called) is expressed as `std::nullopt` instead of an uninitialized read. |
+| `parallelcpp/bank_account.h` | `BankAccount` — minimal mutex-protected account (`Deposit`/`Withdraw`/`Balance`) used as a concurrency stress-test subject. |
 
 ## Bugs found and fixed while rewriting this repo
 
 The original `thread-sync.cpp` had a real correctness bug: `wait_and_pop(int&
 item)` returned without writing to `item` when the queue was empty and the
 producer was finished, but the caller read `item` anyway to decide whether it
-was valid. `ProducerConsumerQueue<T>::waitAndPop()` fixes this by returning
+was valid. `ProducerConsumerQueue<T>::WaitAndPop()` fixes this by returning
 `std::optional<T>` — there is no way to read a value that was never produced.
 `tests/test_producer_consumer_queue.cpp` regression-tests this exact
 shutdown-while-empty path with a real spawned `std::thread`.
 
 The original `thread-pool.cpp` used the deprecated (removed-in-C++20)
-`std::result_of`; `ThreadPool::enqueue` now uses `std::invoke_result_t`.
+`std::result_of`; `ThreadPool::Enqueue` now uses `std::invoke_result_t`.
 
 ## Build
 

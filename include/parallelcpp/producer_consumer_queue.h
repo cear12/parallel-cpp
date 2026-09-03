@@ -8,13 +8,13 @@
 namespace parallelcpp {
 
 // A bounded-free, thread-safe FIFO queue for the classic producer/consumer
-// pattern. Producers push(); consumers either poll non-blockingly via
-// tryPop() or block until an item is available (or the queue is marked
-// finished) via waitAndPop().
+// pattern. Producers Push(); consumers either poll non-blockingly via
+// TryPop() or block until an item is available (or the queue is marked
+// finished) via WaitAndPop().
 template <typename T>
 class ProducerConsumerQueue {
 public:
-    void push(T item) {
+    void Push(T item) {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             queue_.push(std::move(item));
@@ -22,7 +22,7 @@ public:
         condition_.notify_one();
     }
 
-    bool tryPop(T& out) {
+    bool TryPop(T& out) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (queue_.empty()) return false;
         out = std::move(queue_.front());
@@ -35,7 +35,7 @@ public:
     // unset) to make "nothing left, and nothing more is coming" an
     // explicit, unambiguous result instead of relying on the caller to
     // pre-initialize a sentinel value.
-    std::optional<T> waitAndPop() {
+    std::optional<T> WaitAndPop() {
         std::unique_lock<std::mutex> lock(mutex_);
         condition_.wait(lock, [this] { return !queue_.empty() || finished_; });
         if (queue_.empty()) return std::nullopt;  // finished_ and drained
@@ -46,9 +46,9 @@ public:
     }
 
     // Signals that no more items will be pushed; wakes every thread
-    // blocked in waitAndPop() so they can observe an empty, finished queue
+    // blocked in WaitAndPop() so they can observe an empty, finished queue
     // and exit instead of waiting forever.
-    void setFinished() {
+    void SetFinished() {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             finished_ = true;
@@ -56,12 +56,12 @@ public:
         condition_.notify_all();
     }
 
-    bool empty() const {
+    bool Empty() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return queue_.empty();
     }
 
-    std::size_t size() const {
+    std::size_t Size() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return queue_.size();
     }
